@@ -1,0 +1,48 @@
+<h1>Productos: </h1>
+<div class="container">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Descripción</th>
+        <th>Precio</th>
+        <th>Categoría</th>
+        <th>Unidades Disponibles</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each products}}
+        <tr>
+          <td>{{this.title}}</td>
+          <td>{{this.description}}</td>
+          <td>${{this.price}}</td>
+          <td>{{this.category}}</td>
+          <td>{{this.stock}} unidades</td>
+        </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</div>
+<div>
+  {{#if hasPrevPage}}
+      <a href={{this.prevLink}}><< Anterior</a>
+  {{/if}}
+  &nbsp;
+  {{this.page}}
+  &nbsp;
+  {{#if hasNextPage}}
+      <a href={{this.nextLink}}>Siguiente >></a>
+  {{/if}} 
+</div>
+<h1>Carritos: </h1>
+{{#each carts}}
+  <div style="border: 1px solid #000; border-radius: 1rem; padding: 1rem; margin-bottom: 1rem">
+    <p>ID de Carrito: {{this._id}}</p>
+    <p>Productos:</p>
+    <ul>
+      {{#each this.products}}
+        <li>{{this.product.title}} - Cantidad: {{this.quantity}}</li>
+      {{/each}}
+    </ul>
+  </div>
+{{/each}}

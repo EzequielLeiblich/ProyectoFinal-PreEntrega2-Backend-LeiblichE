@@ -1,0 +1,25 @@
+<link rel="stylesheet" type="text/css" href="/css/chats.css">
+<div>
+    <h1>Chat</h1>
+    <input id="chatbox" placeholder="Escriba aqui...">
+    <p id="messageLogs"></p>
+    <button id="clearButton">Borrar historial</button>
+</div>
+<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/chat.js"></script>
+<script> clearButton.addEventListener('click', () => {
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: 'Esta acción borrará todo el historial de mensajes. ¿Deseas continuar?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, borrar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Lógica para borrar el historial de mensajes
+                deleteMessageHistory();
+            }
+        });
+    });</script>

@@ -1,47 +1,33 @@
 import { Router } from 'express';
 import __dirname from "../utils.js"
+import express from 'express';
 import ProductManager from '../daos/mongodb/ProductManager.class.js';
-import CartManager from '../daos/mongodb/CartManager.class.js';
-import { productsModel } from '../daos/mongodb/models/products.model.js';
 
-let productManager = new ProductManager()
-let cartManager = new CartManager()
+const router = express.Router();
+const productManager = new ProductManager();
 
-const router = Router();
-
-router.get('/', async (req,res)=>{
-  let products = await productManager.getProducts();
+router.get('/', async(req, res) => {
+  const page = req.query.page || 1;
+  let result = await productManager.obtenerProductos(2, page);
+  let prod = result.docs;
+  console.log(result.docs);
   res.render('home', {
-    title: "Inicio",
-    products: products
+    products: prod,
+    hasPrevPage: result.hasPrevPage,
+    hasNextPage: result.hasNextPage,
+    nextPage: result.nextPage,
+    prevPage: result.prevPage,
+    page: result.page
   });
+});
+
+router.get('/realtimeproducts', async(req, res) => {
+  let products = await productManager.obtenerProductos();
+  res.render('realTimeProducts', {products});
+});
+
+router.get('/chat',(req,res)=>{
+  res.render('chat');
 })
-
-router.get('/realtimeproducts', async (req,res)=>{
-  res.render('realTimeProducts',{
-    title: "Tiempo Real"
-  });
-})
-
-// router.get('/products', async (req,res)=>{
-//   let page = parseInt(req.query.page);
-//   let products = await productManager.getProducts();
-//   let result = await productsModel.paginate({},{page,limit:5,lean:true})
-//   result.prevLink = result.hasPrevPage?`http://localhost:8080/products?page=${result.prevPage}`:'';
-//   result.nextLink = result.hasNextPage?`http://localhost:8080/products?page=${result.nextPage}`:'';
-//   result.isValid= !(page<=0||page>result.totalPages)
-//   res.render('products', {
-//     title: "Productos",
-//     products: products
-//   });
-// })
-
-// router.get('/carts', async (req,res)=>{
-//   let carts = await cartManager.getAllCarts()
-//   res.render('carts', {
-//     title: "Carritos",
-//     carts: carts
-//   });
-// })
 
 export default router;

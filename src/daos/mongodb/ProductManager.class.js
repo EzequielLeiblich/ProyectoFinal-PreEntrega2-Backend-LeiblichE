@@ -1,78 +1,56 @@
 import fs from 'fs'
 import mongoose from "mongoose";
-import { productsModel } from "./models/products.model.js";
+import { productModel } from "./models/product.model.js";
 
 export default class ProductManager {
     connection = mongoose.connect("mongodb+srv://ezequielleiblich:1Q2w3e4r@leibliche.nmve4kb.mongodb.net/?retryWrites=true&w=majority")
     .then(() => console.log('Conexión exitosa a MongoDB Atlas'))
     .catch((err) => console.error('Error al conectarse a MongoDB Atlas:', err))
     
-    async addProduct(product) {
-        try{
-        let result = await productsModel.create(product);
-        return result;
-        }catch(e){
-            console.log(e)
-            return e
+    async agregarProducto (product) {
+        try {
+            let result = await productModel.create(product);
+            return result;
+        } catch (e) {
+            console.log(e);
+            return e;
         }
     }
-    async getProducts(limit = 10, page = 1, sort = 0, filtro = null, filtroVal = null){
-        try {
+
+    async obtenerProductos(
+        limit = 1,
+        page = 1,
+        sort = 0,
+        filtro = null,
+        filtroVal = null) {
             let whereOptions = {};
             if (filtro != "" && filtroVal != "") {
                 whereOptions = { [filtro]: filtroVal };
             }
-            if (sort == 1 || sort == -1) {
-            let result = await productsModel.paginate(whereOptions, {limit: limit, page: page, sort: { price: sort}});
+                let result = await productModel.paginate(whereOptions, {
+                lean: true,
+                limit: limit,
+                page: page,
+                sort: { price: sort },
+            });
             return result;
-            }
-            else{
-                let result = await productsModel.paginate(whereOptions, {limit: limit, page: page});
-                return result;
-            }
-        }
-        catch (error) {
-            console.error(error);
-            return error;
-        }
     }
 
-    async getProductById(id) {
-        try {
-            let result = await productsModel.findOne({ _id: id });
-            return result;
-        }
-        catch (error) {
-            console.error(error);
-            return error;
-        }
+    async consultarProducto (id) {
+        let result = await productModel.findOne({_id: id})
+        return result
     }
     
-    async updateProduct(id, updatedProduct) {
-        try{
-            let result = await productsModel.updateOne(
+    async modificarProducto (id, updatedProduct) {
+        let result = await productModel.updateOne(
             { _id: id },
             { $set: updatedProduct }
-            );
-            return result;
-        }
-        catch (error) {
-            console.error(error);
-            return error;
-        }
+        );
+        return result;
     }
     
-    async deleteProduct(id) {
-        try {
-            let result = productsModel.deleteOne(
-                { _id: id },
-                { $set: updatedProduct }
-                );
-            return result;
-        } 
-        catch (error) {
-            console.error(error);
-            return error;
-        }
+    async eliminarProducto (id) {
+        let result = await productModel.deleteOne({_id: id})
+        return result
     }
 }

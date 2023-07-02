@@ -57,7 +57,3 @@ A continuación, se detallan las tareas que se realizaron:
   Cada producto mostrado puede resolverse de dos formas:
 
         a. Llevar a una nueva vista con el producto seleccionado y mostrar su descripción completa, detalles de precio, categoría, etc.
-           Además, incluir un botón para agregar al carrito.
-        b. Contar con el botón "Agregar al carrito" directamente en la página, sin necesidad de abrir una página adicional con los detalles del producto.
-
-6. Agregar una vista en la ruta /carts/:cid para visualizar un carrito específico. En esta vista, se listarán SOLO los productos que pertenezcan al carrito seleccionado.

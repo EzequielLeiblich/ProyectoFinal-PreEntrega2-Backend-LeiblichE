@@ -24,6 +24,7 @@ li {
     background-color: #fff;
     padding: 10px;
     margin-bottom: 10px;
+    border: 1px solid #ccc;
 }
 
 input[type="text"],
@@ -42,4 +43,19 @@ button[type="submit"] {
     color: #fff;
     border: none;
     cursor: pointer;
+}
+
+.product-container {
+    border: 1px solid #ddd;
+    border-radius: 1rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.product-container p {
+    margin: 0;
+}
+
+.product-container p:first-child {
+    font-weight: bold;
 }

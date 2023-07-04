@@ -1,45 +1,49 @@
 const socket = io();
-let user;
 
-const chatbox = document.getElementById("chatbox");
-const messageLogs = document.getElementById("messageLogs");
+let sendMsgBtn = document.getElementById("send-message-btn")
+let messageInput = document.getElementById("message-input")
+
+let user = ""
+
+// Identificacion de usuario
 
 Swal.fire({
-    title: "Ingrese su email",
-    input: "text",
+    title: "E-mail",
+    input: "email",
     inputValidator: (value) => {
-        return !value && "Ingresa tu email para loguearte";
+        if (!value) {
+        return "Escribir un email para identificarte"
+        }
+        return false
     },
     allowOutsideClick: false,
-}).then((result) => {
-    console.log(result.value)
+    }).then((result) => {
     user = result.value;
-    socket.emit("authenticatedUser", user);
 });
 
-chatbox.addEventListener("keyup", (evt) => {
-    if (evt.key === "Enter") {
-        socket.emit("message", { user: user, message: chatbox.value });
-        chatbox.value = "";
+// Socket.on
+
+socket.on("update-messages", (messages) => {
+    let chatContainer = document.getElementById("chat-container")
+    chatContainer.innerHTML = ""
+
+    for (message of messages) {
+        let messageElement = document.createElement("p")
+        messageElement.innerHTML = `${message.user}: ${message.message}`
+
+        chatContainer.appendChild(messageElement)
     }
-});
+})
 
-socket.on("imprimir", (data) => {
-    let mensajes = "";
-    data.forEach((msj) => {
-        mensajes += `${msj.user} envió: ${msj.message} <br/>`;
-    });
-    messageLogs.innerHTML = mensajes;
-});
+// Event listeners
 
-socket.on('newUserAlert', (data)=>{
-    if (!user) return
-    Swal.fire({
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 5000,
-        title:  data + ' se ha unido al chat',
-        icon: 'success'
-    })
+messageInput.addEventListener("keypress", (event) => {
+    if (event.key === "Enter") {
+        sendMsgBtn.click();
+    }
+})
+
+sendMsgBtn.addEventListener('click', () => {
+    socket.emit("new-message", {user: user, message: messageInput.value})
+    messageInput.value = ""
 })

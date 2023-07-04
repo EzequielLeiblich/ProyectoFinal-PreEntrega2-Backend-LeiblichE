@@ -1,19 +1,16 @@
 import mongoose from 'mongoose'
-import { messageModel } from './models/message.model.js'
+import { messageModel } from './models/messages.model.js'
 
 export default class MessageManager {
-    connection = mongoose.connect('mongodb+srv://ezequielleiblich:1Q2w3e4r@leibliche.nmve4kb.mongodb.net/?retryWrites=true&w=majority')
-    .then(() => console.log('Conexión exitosa a MongoDB Atlas'))
-    .catch((err) => console.error('Error al conectarse a MongoDB Atlas:', err))
 
-    async agregarMessage (message) {
-        const { user, message: text } = message; // Extrae los valores de user y message
-        const msg = { user, message: text }; // Asigna los valores extraídos al objeto msg
+    async addMessage (message) {
+        const { user, message: text } = message;
+        const msg = { user, message: text };
         let result = await messageModel.create(msg) 
         return result;
     }
 
-    async obtenerMessages () {
+    async getMessages () {
         let result = await messageModel.find()
         return result
     }

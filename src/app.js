@@ -5,11 +5,17 @@ import __dirname from './utils.js'
 import routerProducts from './routes/products.router.js' 
 import routerCarts from './routes/carts.router.js'
 import routerViews from './routes/views.router.js'
+import routerMessages from './routes/messages.router.js'
+import routerSession from './routes/session.router.js'
 
 import { Server } from "socket.io";
 
 import ProductManager from './daos/mongodb/ProductManager.class.js'
 import MessageManager from './daos/mongodb/MessageManager.class.js'
+
+import connectDB from './db.js'
+import MongoStore from 'connect-mongo'
+import session from 'express-session'
 
 const productManager = new ProductManager();
 const messageManager = new MessageManager();
@@ -17,6 +23,7 @@ const messageManager = new MessageManager();
 // initial configuration
 
 const app = express();
+connectDB();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -32,6 +39,16 @@ app.engine("handlebars", handlebars.engine());
 app.set("views", __dirname + "/views");
 app.set("view engine", "handlebars");
 
+// session
+
+app.use(
+  session({
+    store: new MongoStore({ mongoUrl: "mongodb+srv://ezequielleiblich:1Q2w3e4r@leibliche.nmve4kb.mongodb.net/?retryWrites=true&w=majority" }),
+    secret: "mongoSecret",
+    resave: true,
+    saveUninitialized: false,
+  })
+);
 
 // server start and socket io
 
@@ -41,51 +58,56 @@ const socketServer = new Server(expressServer)
 socketServer.on("connection", async (socket) => {
   console.log("Estas conectado " + socket.id)
   
-  socket.on('message', data => {
-    console.log(data)
+  // Products
+  
+  let productManager = new ProductManager()
+  // Se envian todos los productos al conectarse
+  let products = await productManager.getProducts()
+  socket.emit("update-products", products.docs)
+
+  // Se agrega el producto y se vuelven a renderizar para todos los sockets conectados
+  socket.on("add-product", async (productData) => {
+    await productManager.addProduct(productData)
+    
+    products = await productManager.getProducts()
+    socketServer.emit("update-products", products.docs)
   })
 
-  socket.on("message", (data) => {
-    console.log(data)
-    agregarYEnviarMensajes(data)
-  });
+  // Se elimina el producto y se vuelven a renderizar para todos los sockets conectados
+  socket.on("delete-product", async (productID) => {
+    await productManager.deleteProduct(productID)
 
-  socket.on('crearProducto', async(product) => {
-    await productManager.agregarProducto(product);
-    let products = await productManager.obtenerProductos();
-    socket.emit('productosActualizados', (products));
+    products = await productManager.getProducts()
+    socketServer.emit("update-products", products.docs)
   })
 
-  socket.on('eliminarProducto', async(productId) => {
-      console.log("eliminando")
-      await productManager.eliminarProducto(productId);
-      let products = await productManager.obtenerProductos();
-      socket.emit('productosActualizados', (products));
+  // Messages
+
+  let messageManager = new MessageManager()
+
+  // Se envian todos los mensajes al conectarse
+  socket.emit("update-messages", await messageManager.getMessages())
+
+  // Se agrega el mensaje y se vuelven a renderizar
+  socket.on("new-message", async (newMessage) => {
+
+    await messageManager.addMessage(newMessage)
+
+    socketServer.emit("update-messages", await messageManager.getMessages())
   })
+})
 
-  socket.on("message", (data) => {
-      console.log(data)
-      agregarYEnviarMensajes(data)
-  });
-
-  socket.on('authenticatedUser', (data)=>{
-      socket.broadcast.emit('newUserAlert', data)
-  })
-});
-
-async function agregarYEnviarMensajes(msg) {
-  await messageManager.agregarMessage(msg);
-  const messages = await messageManager.obtenerMessages();
-  socketServer.emit("imprimir", messages);
-}
-
-// routers
+// middleware (all requests have access to socket server)
 
 app.use((req, res, next) => {
   req.socketServer = socketServer;
-  next()
-});
+  next();
+})
+
+// routers
 
 app.use("/", routerViews);
-app.use("/api/products/", routerProducts);
-app.use("/api/carts/", routerCarts);
+app.use("/api/products", routerProducts);
+app.use("/api/carts", routerCarts);
+app.use("/api/messages", routerMessages);
+app.use('/api/sessions', routerSession)

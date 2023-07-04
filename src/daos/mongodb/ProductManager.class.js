@@ -1,23 +1,19 @@
-import fs from 'fs'
 import mongoose from "mongoose";
-import { productModel } from "./models/product.model.js";
+import { productsModel } from "./models/products.model.js";
 
 export default class ProductManager {
-    connection = mongoose.connect("mongodb+srv://ezequielleiblich:1Q2w3e4r@leibliche.nmve4kb.mongodb.net/?retryWrites=true&w=majority")
-    .then(() => console.log('Conexión exitosa a MongoDB Atlas'))
-    .catch((err) => console.error('Error al conectarse a MongoDB Atlas:', err))
     
-    async agregarProducto (product) {
+    async addProduct(product) {
         try {
-            let result = await productModel.create(product);
-            return result;
-        } catch (e) {
-            console.log(e);
-            return e;
+            let result = await productsModel.create(product)
+            return result
+            }
+            catch(error) {
+            throw new Error("Código de producto duplicado")
         }
     }
 
-    async obtenerProductos(
+    async getProducts(
         limit = 1,
         page = 1,
         sort = 0,
@@ -27,7 +23,7 @@ export default class ProductManager {
             if (filtro != "" && filtroVal != "") {
                 whereOptions = { [filtro]: filtroVal };
             }
-                let result = await productModel.paginate(whereOptions, {
+                let result = await productsModel.paginate(whereOptions, {
                 lean: true,
                 limit: limit,
                 page: page,
@@ -36,21 +32,19 @@ export default class ProductManager {
             return result;
     }
 
-    async consultarProducto (id) {
-        let result = await productModel.findOne({_id: id})
+    async getProductById(id) {
+        let result = await productsModel.findOne({ _id: id })
         return result
     }
     
-    async modificarProducto (id, updatedProduct) {
-        let result = await productModel.updateOne(
-            { _id: id },
-            { $set: updatedProduct }
-        );
-        return result;
+    
+    async updateProduct(id, updatedProduct) {
+        let result = await productsModel.updateOne({ _id: id}, { $set: updatedProduct })
+        return result
     }
     
-    async eliminarProducto (id) {
-        let result = await productModel.deleteOne({_id: id})
+    async deleteProduct(id) {
+        let result = await productsModel.deleteOne({ _id: id })
         return result
     }
 }

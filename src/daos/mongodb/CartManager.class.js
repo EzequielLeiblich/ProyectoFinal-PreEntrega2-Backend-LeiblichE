@@ -1,105 +1,93 @@
 import mongoose from "mongoose";
-import { cartModel } from "./models/carts.model.js";
+import { cartsModel } from "./models/carts.model.js";
+import ProductManager from "./ProductManager.class.js";
 
 export default class CartManager {
-  connection = mongoose.connect('mongodb+srv://ezequielleiblich:1Q2w3e4r@leibliche.nmve4kb.mongodb.net/?retryWrites=true&w=majority')
-  .then(() => console.log('Conexión exitosa a MongoDB Atlas'))
-  .catch((err) => console.error('Error al conectarse a MongoDB Atlas:', err))
 
-  async agregarCarrito () {
-    let result = await cartModel.create({items: []}) 
-    return result;
-  }
+  productManager = new ProductManager()
 
-  async consultarCarrito (id) {
-    const result = await cartModel.findOne({ _id: id }).populate('items.product');
+  async createCart() {
+    const result = await cartsModel.create({ products: [] })
     return result
   }
 
-  async consultarCarritos () {
-      let result = await cartModel.find()
-      return result
+  async getCartById(id) {
+    const result = await cartsModel.findOne({ _id: id }).populate('products.product')
+    return result
   }
 
-  async agregarProductoAlCarrito(cartId, productId) {
+  async getCarts() {
+    const result = await cartsModel.find({}).populate('products.product')
+    return result
+  }
+
+  async addProductToCart(cid, pid) {
     try {
-      const existingCartItem = await cartModel.findOneAndUpdate(
-        { _id: cartId, 'items.product': productId },
-        { $inc: { 'items.$.quantity': 1 } },
-        { new: true }
-      );
-      if (existingCartItem) {
-        return existingCartItem;
+      const cart = await this.getCartById(cid)
+
+      let product = cart.products.find((prod) => prod.product._id.toString() === pid )
+
+      if (!product) {
+        let newProduct = await this.productManager.getProductById(pid)
+
+        cart.products.push({ product: newProduct, quantity: 1 })
       }
-  
-      const cart = await cartModel.findOneAndUpdate(
-        { _id: cartId },
-        { $push: { items: { product: productId } } },
-        { new: true }
-      );
-  
-      return cart;
-    } catch (error) {
-    console.log(error)
-    }
-  }
-
-  async quitarProductoDelCarrito(cartId, productId) {
-    try {
-      const cart = await cartModel.findOneAndUpdate(
-        { _id: cartId },
-        { $inc: { 'items.$[elem].quantity': -1 } },
-        { arrayFilters: [{ 'elem.product': productId, 'elem.quantity': { $gt: 0 } }], new: true }
-      );
-  
-      if (cart) {
-        const updatedItems = cart.items.filter(item => item.quantity > 0);
-        cart.items = updatedItems;
-        await cart.save();
+      else {
+        product.quantity += 1
       }
-  
-      return cart;
-    } catch (error) {
-      console.log(error);
+      
+      await cart.save()
+
+      return
+    } 
+    catch(error) {
+      throw new Error("El producto no existe")
     }
   }
 
-  async quitarTodosLosProductos(cartId) {
+  async deleteProductFromCart(cid, pid) {
     try {
-      const cart = await cartModel.findById(cartId);
-      cart.items = [];
-      await cart.save();
-      return cart;
-    } catch (error) {
-      console.log(error);
+      const cart = await this.getCartById(cid)
+      cart.products = cart.products.filter((prod) => prod.product._id.toString() !== pid )
+      await cart.save()
+
+      return
+    } 
+    catch(error) {
+      throw new Error("El producto no existe")
     }
   }
 
-  async actualizarCantProductos(cartId, productId, newQuantity){
-    try {
-      const cart = await cartModel.findOneAndUpdate(
-        { _id: cartId, 'items.product': productId },
-        { $set: { 'items.$.quantity': newQuantity } },
-        { new: true }
-      );
-      cart.save()
-      return cart;
-    } catch (error) {
-      console.log(error)
-    }
+  async deleteAllProductsFromCart(cid) {
+    const cart = await this.getCartById(cid)
+    cart.products = []
+    await cart.save()
+
+    return
   }
 
-  async actualizarArrayProductos(cartId, array) {
-    try {
-      const cart = await cartModel.findOneAndUpdate(
-        { _id: cartId },
-        { $set: { 'items': array } },
-        { new: true }
-      );
-      cart.save()
-      return cart;
-    } catch (error) {
-    console.log(error)
-    }
+  async replaceProductsFromCart(cid, newProducts) {
+    const cart = await this.getCartById(cid)
+    cart.products = newProducts
+    await cart.save()
+
+    return
   }
+
+  async updateProductQuantityFromCart(cid, pid, newQuantity) {
+    const cart = await this.getCartById(cid)
+    let product = cart.products.find((prod) => prod.product._id.toString() === pid )
+    product.quantity = newQuantity
+
+    await cart.save()
+
+    return
+  }
+
+  async getAllProductsFromCart(id) {
+    const cart = await cartsModel.findOne({ _id: id }).populate('products.product').lean()
+
+    return cart.products
+  }
+
 }

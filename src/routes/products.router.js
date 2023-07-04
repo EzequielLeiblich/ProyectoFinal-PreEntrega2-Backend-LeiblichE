@@ -6,46 +6,83 @@ let productManager = new ProductManager();
 
 const router = Router();
 
-router.get('/', async (req, res) => { // ?limit=x
-  let limit = Number(req.query.limit);
-  let page = Number(req.query.page);
-  let sort = Number(req.query.sort);
-  let filtro = req.query.filtro;
-  let filtroVal = req.query.filtroVal;
-  let products = await productManager.obtenerProductos(
-      limit,
-      page,
-      sort,
-      filtro,
-      filtroVal
-  );
+router.get('/', async (req, res) => {
+  try {
+    let limit = req.query.limit
+    let page = req.query.page
+    let sort = req.query.sort
+    let filter = req.query.filter
+    let filterValue = req.query.filterValue
 
-  res.send({ products });
-});
+    let products = await productManager.getProducts(limit, page, sort, filter, filterValue)
 
-router.get('/:pid', async (req, res) => {
-  let productId = req.params.pid;
-  let product = await productManager.consultarProducto(productId);
-  res.send(product)
-});
+    let response = {
+      status: "success",
+      payload: products.docs,
+      totalPages: products.totalPages,
+      prevPage: products.prevPage,
+      nextPage: products.nextPage,
+      page: products.page,
+      hasPrevPage: products.hasPrevPage,
+      hasNextPage: products.hasNextPage,
+      prevLink: products.prevLink,
+      nextLink: products.nextLink
+    }
 
-router.post('/', async (req, res) => {
-  const product = req.body;
-  const result = await productManager.agregarProducto(product);
-  res.send({ status: result });
-});
-
-router.put('/:pid', async(req, res) => {
-  let productId = req.params.pid;
-  let product= req.body;
-  const result = await productManager.modificarProducto(productId, product)
-  res.send({ status: result })
+    res.send(response)
+  }
+  catch (error) {
+    res.status(400).send({status: "error", details: "Existe un error"})
+  }
 })
 
-router.delete('/:pid', async(req, res) => {
-  let productId = req.params.pid;
-  const result = await productManager.eliminarProducto(productId);
-  res.send({ status: result })
-});
+router.get('/:pid', async (req, res) => {
+  let id = req.params.pid
+
+  let product = await productManager.getProductById(id)
+
+  if (!product) {
+    res.send("No se encontró el producto")
+    return
+  }
+
+  res.send(product)
+})
+
+router.post('/', async (req, res) => {
+  try {
+    let newProduct = req.body
+
+    await productManager.addProduct(newProduct)
+    
+    const products = await productManager.getProducts()
+    req.socketServer.sockets.emit('update-products', products)
+  
+    res.send({status: "success"})
+  }
+  catch(error) {
+    res.status(400).send({status: "failure", details: error.message})
+  }
+})
+
+router.put('/:pid', async (req, res) => {
+  let id = req.params.pid
+  let newProduct = req.body
+
+  await productManager.updateProduct(id, newProduct)
+
+  res.send({status: "success"})
+})
+
+router.delete('/:pid', async (req, res) => {
+  let id = req.params.pid
+  
+  await productManager.deleteProduct(id)
+
+  const products = await productManager.getProducts()
+  req.socketServer.sockets.emit('update-products', products)
+
+  res.send({status: "success"})
+})
 
 export default router
